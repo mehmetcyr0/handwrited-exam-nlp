@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+backend/database/app.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+dist/
+.env.local

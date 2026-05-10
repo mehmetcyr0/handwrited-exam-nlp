@@ -1,0 +1,11 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.17
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+Pillow==10.4.0
+paddlepaddle==2.6.2
+paddleocr==2.8.1
+sentence-transformers==3.3.1
+scikit-learn==1.5.2
+PyMuPDF==1.24.14
