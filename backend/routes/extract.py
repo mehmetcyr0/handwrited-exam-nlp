@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from database.db import get_connection
-from services.image_processing import process_image_file
-from services.ocr_service import extract_text_from_image, parse_question_answer_heuristic, structured_to_json
+from services.image_processing import prepare_bgr_for_ocr, read_image_bgr, write_bgr_path
+from services.ocr_service import extract_text_from_array, parse_question_answer_heuristic, structured_to_json
 from services.pdf_utils import pdf_first_page_to_png
 
 logger = logging.getLogger(__name__)
@@ -45,8 +45,14 @@ def extract_text(req: ExtractRequest):
             temp_pdf_png = pdf_first_page_to_png(stored, stored.parent)
             work_image = temp_pdf_png
 
-        processed = process_image_file(work_image)
-        ocr_out = extract_text_from_image(processed)
+        bgr = read_image_bgr(work_image)
+        if bgr is None:
+            raise ValueError(f"Görüntü okunamadı: {work_image}")
+        ocr_bgr = prepare_bgr_for_ocr(bgr)
+        ocr_out = extract_text_from_array(ocr_bgr)
+        preview_path = write_bgr_path(
+            work_image.with_name(f"{work_image.stem}_ocr_preview.png"), ocr_bgr
+        )
         qa = parse_question_answer_heuristic(ocr_out["full_text"])
         structured = ocr_out["structured"]
         structured["question_answers"] = qa
@@ -71,7 +77,7 @@ def extract_text(req: ExtractRequest):
             "upload_id": req.upload_id,
             "extracted_text": ocr_out["full_text"],
             "structured": structured,
-            "processed_image": str(processed),
+            "processed_image": str(preview_path),
         }
     except Exception as e:
         logger.exception("Extract failed")

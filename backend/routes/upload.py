@@ -40,15 +40,23 @@ async def upload_exam(file: UploadFile = File(...)):
         logger.exception("Upload failed")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-    with get_connection() as conn:
-        cur = conn.execute(
-            """
-            INSERT INTO uploads (original_filename, stored_path, content_type)
-            VALUES (?, ?, ?)
-            """,
-            (file.filename, str(stored_path), file.content_type or ""),
-        )
-        upload_id = cur.lastrowid
+    try:
+        with get_connection() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO uploads (original_filename, stored_path, content_type)
+                VALUES (?, ?, ?)
+                """,
+                (file.filename, str(stored_path), file.content_type or ""),
+            )
+            upload_id = cur.lastrowid
+    except Exception as e:
+        try:
+            stored_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        logger.exception("Upload DB insert failed")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     logger.info("Uploaded id=%s path=%s", upload_id, stored_path)
     return {

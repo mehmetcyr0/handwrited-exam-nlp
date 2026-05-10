@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import logging
 import sys
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from database.db import init_db
 from routes import api_router
@@ -19,10 +21,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    logger.info("Backend hazır")
+    yield
+
+
 app = FastAPI(
     title="El Yazısı Sınav Okuyucu",
     description="Yerel AI destekli el yazısı sınav değerlendirme API",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Yerel geliştirme: localhost / 127.0.0.1 üzerinde her port (5173, 4173, vb.)
@@ -37,6 +48,16 @@ app.add_middleware(
 app.include_router(api_router)
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception(_request: Request, exc: Exception):
+    """HTTPException / RequestValidationError için FastAPI’nın kendi işleyicisi (MRO’da önce) kullanılır."""
+    logger.exception("İşlenmeyen sunucu hatası")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc) or "Sunucu hatası"},
+    )
+
+
 @app.get("/")
 def root():
     """Kök URL; tarayıcıda 8000 açıldığında yönlendirme bilgisi (404 yerine)."""
@@ -48,12 +69,6 @@ def root():
         "health": "/health",
         "api_upload": "/api/upload",
     }
-
-
-@app.on_event("startup")
-def startup():
-    init_db()
-    logger.info("Backend hazır")
 
 
 @app.get("/health")

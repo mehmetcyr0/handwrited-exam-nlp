@@ -3,9 +3,16 @@ uvicorn[standard]==0.32.1
 python-multipart==0.0.17
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
+# Torch: WinError 127 (shm.dll) icin sabit surum; yine olmazsa backend\fix-torch-cpu.cmd
+# veya API TF-IDF yedegini kullanir (sentence-transformers yuklemesi istege bagli kalir).
+torch==2.4.1
 Pillow==10.4.0
 paddlepaddle==2.6.2
 paddleocr==2.8.1
+easyocr==1.7.2
+# El yazısı / Latin: ONNX ile ek motor (Torch gerekmez; ilk çalıştırmada model indirir)
+onnxruntime>=1.17.0,<2
+rapidocr>=3.8.1
 sentence-transformers==3.3.1
 scikit-learn==1.5.2
 PyMuPDF==1.24.14

@@ -30,8 +30,9 @@ echo API: http://127.0.0.1:8000  ^| Arayuz: http://127.0.0.1:5173
 echo Iki pencere aciliyor. Kapatmak icin pencereleri kapatin.
 echo.
 
-start "ElYazisi-API" cmd /k "cd /d \"%BACK%\" && .venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000"
+rem Ic ice tirnak: CMD'de ""yol"" — \" ile kacis bozuk; Turkce karakter/bosluk icin gerekli
+start "ElYazisi-API" cmd /k "cd /d ""%BACK%"" && .venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000"
 
 cd /d "%FRONT%"
 if not exist "node_modules\" call npm install
-start "ElYazisi-UI" cmd /k "cd /d \"%FRONT%\" && npm run dev"
+start "ElYazisi-UI" cmd /k "cd /d ""%FRONT%"" && npm run dev -- --host 127.0.0.1"

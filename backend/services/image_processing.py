@@ -35,6 +35,11 @@ def _imread_path(path: Path) -> np.ndarray | None:
         return None
 
 
+def read_image_bgr(path: Path | str) -> np.ndarray | None:
+    """BGR görüntü yükle (Unicode yollar için; OCR vb. diğer modüller kullanır)."""
+    return _imread_path(Path(path))
+
+
 def _imwrite_path(path: Path, img: np.ndarray) -> bool:
     """Write image; avoids cv2.imwrite so non-ASCII paths work on Windows."""
     suffix = path.suffix.lower() or ".png"
@@ -74,6 +79,107 @@ def _four_point_transform(image: np.ndarray, pts: np.ndarray) -> np.ndarray:
     )
     m = cv2.getPerspectiveTransform(rect, dst)
     return cv2.warpPerspective(image, m, (max_width, max_height))
+
+
+def ensure_ocr_long_edge(
+    bgr: np.ndarray,
+    *,
+    min_long: int = 1680,
+    max_long: int = 4000,
+) -> np.ndarray:
+    """
+    Çok küçük fotoğrafları büyüt (ince yazı), çok büyükleri hafif küçült (bellek / det hızı).
+    """
+    h, w = bgr.shape[:2]
+    longest = max(h, w)
+    if longest < min_long:
+        scale = min_long / longest
+        nw, nh = max(1, int(w * scale)), max(1, int(h * scale))
+        return cv2.resize(bgr, (nw, nh), interpolation=cv2.INTER_CUBIC)
+    if longest > max_long:
+        scale = max_long / longest
+        nw, nh = max(1, int(w * scale)), max(1, int(h * scale))
+        return cv2.resize(bgr, (nw, nh), interpolation=cv2.INTER_AREA)
+    return bgr
+
+
+def prepare_bgr_for_ocr(
+    bgr: np.ndarray,
+    *,
+    apply_perspective: bool = False,
+    denoise_h: int = 6,
+) -> np.ndarray:
+    """
+    PaddleOCR için görüntü: CLAHE gri tonlama, hafif gürültü azaltma.
+    OTSU ikili eşik kullanılmaz (el yazısı ince çizgileri siler).
+    Perspektif varsayılan kapalı — yanlış dörtgen metnin yarısını kesebiliyor.
+    """
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    if denoise_h > 0:
+        gray = cv2.fastNlMeansDenoising(
+            gray, h=denoise_h, templateWindowSize=7, searchWindowSize=21
+        )
+    if apply_perspective:
+        gray = _try_perspective_correction(gray)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(gray)
+    return cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
+
+
+def _unsharp_mask(gray: np.ndarray, sigma: float = 1.0, amount: float = 0.45) -> np.ndarray:
+    """Kalem çizgilerini hafifçe belirginleştirir (aşırı yapılırsa gürültü artar)."""
+    blur = cv2.GaussianBlur(gray, (0, 0), sigma)
+    sharp = cv2.addWeighted(gray, 1.0 + amount, blur, -amount, 0)
+    return np.clip(sharp, 0, 255).astype(np.uint8)
+
+
+def prepare_bgr_for_ocr_sharp(bgr: np.ndarray, *, denoise_h: int = 4) -> np.ndarray:
+    """CLAHE + hafif unsharp — bulanık fotoğraflarda tanıma iyileşebilir."""
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    if denoise_h > 0:
+        gray = cv2.fastNlMeansDenoising(
+            gray, h=denoise_h, templateWindowSize=7, searchWindowSize=21
+        )
+    gray = _unsharp_mask(gray)
+    clahe = cv2.createCLAHE(clipLimit=2.2, tileGridSize=(8, 8))
+    enhanced = clahe.apply(gray)
+    return cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
+
+
+def prepare_bgr_for_ocr_bilateral(bgr: np.ndarray) -> np.ndarray:
+    """Kenar koruyan yumuşatma; kurşun kalem / ince çizgi için NlMeans alternatifi."""
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    gray = cv2.bilateralFilter(gray, d=7, sigmaColor=60, sigmaSpace=60)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(gray)
+    return cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
+
+
+def prepare_bgr_for_ocr_percentile(
+    bgr: np.ndarray,
+    *,
+    p_low: float = 2.0,
+    p_high: float = 98.0,
+) -> np.ndarray:
+    """Düşük kontrastlı fotoğraflarda histogram germe + CLAHE (OCR için Otsu yok)."""
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    lo, hi = np.percentile(gray, (p_low, p_high))
+    if hi <= lo + 1e-6:
+        stretched = gray
+    else:
+        g = np.clip((gray.astype(np.float32) - lo) * (255.0 / (hi - lo)), 0, 255).astype(np.uint8)
+        stretched = g
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(stretched)
+    return cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
+
+
+def write_bgr_path(path: Path, bgr: np.ndarray) -> Path:
+    """BGR görüntüyü diske yazar (Unicode yol)."""
+    path = Path(path)
+    if not _imwrite_path(path, bgr):
+        raise ValueError(f"Görüntü yazılamadı: {path}")
+    return path
 
 
 def _try_perspective_correction(gray: np.ndarray) -> np.ndarray:

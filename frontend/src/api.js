@@ -16,6 +16,31 @@ export const API_BASE = apiBase();
 /** Yardım metinleri ve /docs linki — backend her zaman bu adreste dinler */
 export const BACKEND_ORIGIN = "http://127.0.0.1:8000";
 
+function normalizeDetail(detail) {
+  if (detail == null) return null;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item.msg === "string") return item.msg;
+        try {
+          return JSON.stringify(item);
+        } catch {
+          return String(item);
+        }
+      })
+      .filter(Boolean)
+      .join(" · ");
+  }
+  if (typeof detail === "object" && typeof detail.message === "string") return detail.message;
+  try {
+    return JSON.stringify(detail);
+  } catch {
+    return String(detail);
+  }
+}
+
 async function handle(res) {
   const text = await res.text();
   let data;
@@ -25,7 +50,7 @@ async function handle(res) {
     data = { detail: text || "Geçersiz yanıt" };
   }
   if (!res.ok) {
-    const msg = data?.detail ?? res.statusText;
+    const msg = normalizeDetail(data?.detail) ?? res.statusText;
     throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
   }
   return data;

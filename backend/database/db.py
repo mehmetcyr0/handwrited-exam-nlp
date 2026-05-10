@@ -42,7 +42,19 @@ def init_db() -> None:
             """
         )
         conn.commit()
+        _migrate_grades_columns(conn)
     logger.info("Database initialized at %s", DB_PATH)
+
+
+def _migrate_grades_columns(conn: sqlite3.Connection) -> None:
+    """Mevcut SQLite kurulumlarına semantic/lexical sütunları ekle."""
+    rows = conn.execute("PRAGMA table_info(grades)").fetchall()
+    names = {r[1] for r in rows}
+    if "semantic_percent" not in names:
+        conn.execute("ALTER TABLE grades ADD COLUMN semantic_percent REAL")
+    if "lexical_percent" not in names:
+        conn.execute("ALTER TABLE grades ADD COLUMN lexical_percent REAL")
+    conn.commit()
 
 
 @contextmanager

@@ -24,11 +24,14 @@ export default function Results() {
 
   if (error) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16">
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 animate-fade-in">
+        <div className="rounded-2xl border border-red-200/90 bg-red-50/90 px-5 py-4 text-sm font-medium text-red-900 shadow-card">
           {error}
         </div>
-        <Link to="/" className="inline-block mt-6 text-accent font-medium hover:underline">
+        <Link
+          to="/"
+          className="inline-flex mt-8 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-glow hover:bg-accent-dim transition-colors"
+        >
           Panele dön
         </Link>
       </div>
@@ -37,67 +40,69 @@ export default function Results() {
 
   if (!data) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center text-ink-700">
-        Sonuçlar yükleniyor…
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-24 flex flex-col items-center justify-center gap-4 text-ink-600 animate-fade-in">
+        <span className="h-8 w-8 rounded-full border-2 border-accent/20 border-t-accent animate-spin" />
+        <p className="text-sm font-semibold">Sonuçlar yükleniyor…</p>
       </div>
     );
   }
 
   const sim = data.similarity_percent;
   const pctColor =
-    sim >= 90 ? "text-emerald-600" : sim >= 70 ? "text-blue-600" : sim >= 50 ? "text-amber-600" : "text-red-600";
+    sim >= 80 ? "text-emerald-600" : sim >= 60 ? "text-blue-600" : sim >= 40 ? "text-amber-600" : "text-red-600";
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-semibold text-ink-950">Değerlendirme sonucu</h2>
-          <p className="text-sm text-ink-700 mt-1">Kayıt #{data.grade_id}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-ink-500 mb-1">Sonuç</p>
+          <h2 className="text-3xl font-bold text-ink-950 tracking-tight">Değerlendirme özeti</h2>
+          <p className="text-sm text-ink-600 font-medium mt-1.5">Kayıt #{data.grade_id}</p>
         </div>
         <Link
           to="/"
-          className="text-sm font-medium text-accent hover:underline shrink-0"
+          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-ink-800 shadow-sm hover:border-accent/40 hover:text-accent transition-colors shrink-0"
         >
           Yeni sınav
         </Link>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-ink-700 font-medium">Anlamsal benzerlik</p>
-          <p className={`text-3xl font-bold mt-1 ${pctColor}`}>%{Number(sim).toFixed(1)}</p>
+      <div className="grid sm:grid-cols-3 gap-4 lg:gap-6">
+        <div className="rounded-2xl bg-white border border-slate-200/80 p-6 shadow-card">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-ink-500">Birleşik benzerlik</p>
+          <p className={`text-4xl font-bold mt-2 tabular-nums tracking-tight ${pctColor}`}>%{Number(sim).toFixed(1)}</p>
         </div>
-        <div className="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-ink-700 font-medium">Puan</p>
-          <p className="text-3xl font-bold mt-1 text-ink-950">
+        <div className="rounded-2xl bg-white border border-slate-200/80 p-6 shadow-card">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-ink-500">Puan</p>
+          <p className="text-4xl font-bold mt-2 text-ink-950 tabular-nums tracking-tight">
             {Number(data.final_score).toFixed(1)}
-            <span className="text-lg text-ink-700 font-normal">
+            <span className="text-xl text-ink-600 font-semibold">
               {" "}
               / {Number(data.max_score).toFixed(0)}
             </span>
           </p>
         </div>
-        <div className="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm sm:col-span-1">
-          <p className="text-xs uppercase tracking-wide text-ink-700 font-medium">Tarih</p>
-          <p className="text-sm font-medium mt-2 text-ink-950">{data.created_at || "—"}</p>
+        <div className="rounded-2xl bg-white border border-slate-200/80 p-6 shadow-card">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-ink-500">Tarih</p>
+          <p className="text-sm font-semibold mt-3 text-ink-950">{data.created_at || "—"}</p>
         </div>
       </div>
 
-      <section className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm space-y-3">
-        <h3 className="font-semibold text-ink-950">Geri bildirim</h3>
-        <p className="text-ink-700 leading-relaxed">{data.feedback}</p>
+      <section className="rounded-2xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-card space-y-3">
+        <h3 className="text-base font-bold text-ink-950">Geri bildirim</h3>
+        <p className="text-ink-700 leading-relaxed text-[15px] font-medium">{data.feedback}</p>
       </section>
 
-      <section className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm space-y-3">
-        <h3 className="font-semibold text-ink-950">Çıkarılan metin (öğrenci)</h3>
-        <pre className="text-sm text-ink-700 whitespace-pre-wrap bg-paper-50 rounded-xl p-4 max-h-80 overflow-auto border border-slate-100">
+      <section className="rounded-2xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-card space-y-3">
+        <h3 className="text-base font-bold text-ink-950">Çıkarılan metin (öğrenci)</h3>
+        <pre className="text-sm text-ink-700 whitespace-pre-wrap bg-paper-50/80 rounded-xl p-4 max-h-80 overflow-auto border border-slate-100 font-mono leading-relaxed">
           {data.extracted_text || "(boş)"}
         </pre>
       </section>
 
-      <section className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm space-y-3">
-        <h3 className="font-semibold text-ink-950">Cevap anahtarı (kullanılan)</h3>
-        <pre className="text-sm text-ink-700 whitespace-pre-wrap bg-paper-50 rounded-xl p-4 max-h-64 overflow-auto border border-slate-100">
+      <section className="rounded-2xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-card space-y-3">
+        <h3 className="text-base font-bold text-ink-950">Cevap anahtarı (kullanılan)</h3>
+        <pre className="text-sm text-ink-700 whitespace-pre-wrap bg-paper-50/80 rounded-xl p-4 max-h-64 overflow-auto border border-slate-100 font-mono leading-relaxed">
           {data.answer_key}
         </pre>
       </section>

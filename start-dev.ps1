@@ -30,13 +30,13 @@ try {
     Pop-Location
 }
 
-$py = Join-Path $backend ".venv\Scripts\python.exe"
 Write-Host ""
 Write-Host "İki CMD penceresi açılıyor: API http://127.0.0.1:8000 | Arayüz http://127.0.0.1:5173"
 Write-Host ""
 
-$backCmd = "cd /d `"$backend`" && `"$py`" -m uvicorn main:app --host 127.0.0.1 --port 8000"
-Start-Process cmd.exe -ArgumentList "/k", $backCmd
+# -WorkingDirectory: cd ve tirnak hatasi olmadan (Turkce yol, bosluk)
+$backLine = ".venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000"
+Start-Process cmd.exe -WorkingDirectory $backend -ArgumentList "/k", $backLine
 
-$frontCmd = "cd /d `"$frontend`" && if not exist node_modules\ npm install && npm run dev"
-Start-Process cmd.exe -ArgumentList "/k", $frontCmd
+$frontLine = "if not exist node_modules\ npm install && npm run dev -- --host 127.0.0.1"
+Start-Process cmd.exe -WorkingDirectory $frontend -ArgumentList "/k", $frontLine
